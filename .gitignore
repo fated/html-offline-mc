@@ -10,3 +10,10 @@
 *.lai
 *.la
 *.a
+
+# CGI scripts
+*.cgi
+
+# Temperary files
+*.c~
+*.h~

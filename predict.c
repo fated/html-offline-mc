@@ -63,8 +63,9 @@ int cgiMain() {
 void ShowForm() {
   cgiHeaderContentType("text/html");
   fprintf(cgiOut, "<html><head>\n");
-  fprintf(cgiOut, "<title>Upload Data Set</title></head>\n");
-  fprintf(cgiOut, "<body><h1>Upload Data Set</h1>\n");
+  fprintf(cgiOut, "<title>Offline Venn Machine Prediction</title></head><body background=\"../gifs/rhultile.gif\">\n");
+  fprintf(cgiOut, "<center><h2>Offline Venn Machine Prediction <font size=\"-1\">[go to <a href=\"../index.html\">Main Menu</a>]</font></h2></center>\n");
+  fprintf(cgiOut, "<h2>Upload Data Set</h2>\n");
   fprintf(cgiOut, "<p>Data set should be prepared in a single file (training set and a test set should be saved in different files).</p>\n");
   fprintf(cgiOut, "<p>The first three lines should be :<br>\n no._of_instances<br />\n no._of_classes<br />\n no._of_attributes<br /></p>\n");
   fprintf(cgiOut, "<p>Each instance is placed in a line in the following format :<br>\n label feat_1 ... feat_l<br /></p>\n");
@@ -80,8 +81,22 @@ void ShowForm() {
   fprintf(cgiOut, "<input type=\"file\" name=\"train\" value=\"\"> (Select A Local File)<br />\n");
   fprintf(cgiOut, "Testing Data Upload:\n");
   fprintf(cgiOut, "<input type=\"file\" name=\"test\" value=\"\"> (Select A Local File)<br />\n");
-  fprintf(cgiOut, "<input type=\"submit\" name=\"predict\" value=\"Submit\">\n");
-  fprintf(cgiOut, "<input type=\"reset\" value=\"Reset\"></p>\n");
+
+  fprintf(cgiOut, "<hr>\n<h2>Select Options</h2>\n");
+  fprintf(cgiOut, "<p>Set Margin (beta):<br />\n<input type=\"text\" name=\"beta\" value=\"0.0001\"></p>");
+  fprintf(cgiOut, "<p>Select Kernel:\n<br />\n<select name=\"kernels\">\n");
+  fprintf(cgiOut, "<option value=\"0\">exponent exp(-(||A-B||^2)/(2*sigma^2))\n");
+  fprintf(cgiOut, "<option value=\"1\">exponent np (sigma=1)\n");
+  fprintf(cgiOut, "<option value=\"2\">homogeneous polynom (AxB)^degree\n");
+  fprintf(cgiOut, "<option value=\"3\">non-homogeneous polynom (a0+AxB)^degree\n");
+  fprintf(cgiOut, "<option value=\"4\">non-homogeneous polynom (1+AxB)^degree\n");
+  fprintf(cgiOut, "</select><br /></p>\n");
+  fprintf(cgiOut, "<p>Set Polynomial Degree (for polynom kernels):<br />\n<input type=\"text\" name=\"polynom_degree\" value=\"1\"></p>\n");
+  fprintf(cgiOut, "<p>Set Polynomial Constant a0 (for polynom kernel):<br />\n<input type=\"text\" name=\"polynom_a0\" value=\"1\"></p>\n");
+  fprintf(cgiOut, "<p>Set Exponent Standard Deviation (for exponent kernel):<br />\n<input type=\"text\" name=\"exponent_sigma\" value=\"0.5\"></p>\n");
+
+  fprintf(cgiOut, "<hr>\n<input type=\"submit\" name=\"predict\" value=\"Submit\">\n");
+  fprintf(cgiOut, "<input type=\"reset\" value=\"Reset\">\n");
   fprintf(cgiOut, "</form></body></html>\n");
 }
 
@@ -227,14 +242,25 @@ void read_data(char *file_name, MCDataDef *pd) {
   
 }
 
+char *kernels[] = {"0", "1", "2", "3", "4"};
+
 void initialize_train() {
-  spoc_pd.beta = 1e-4;
+  int kernelChoice;
+  double beta, polynom_degree, polynom_a0, exponent_sigma;
+
+  cgiFormDouble("beta", &beta, 1e-4);
+  cgiFormSelectSingle("kernels", kernels, 5, &kernelChoice, 0);
+  cgiFormDouble("polynom_degree", &polynom_degree, 1);
+  cgiFormDouble("polynom_a0", &polynom_a0, 1);
+  cgiFormDouble("exponent_sigma", &exponent_sigma, 0.5);
+
+  spoc_pd.beta = beta;
   spoc_pd.cache_size = 4096;
   
-  spoc_pd.kernel_def.kernel_type = KERNEL_EXPONENT_NP;
-  spoc_pd.kernel_def.polynom_degree = 1;
-  spoc_pd.kernel_def.polynom_a0 = 1;
-  spoc_pd.kernel_def.exponent_sigma = .5;
+  spoc_pd.kernel_def.kernel_type = (enum KernelType) kernelChoice;
+  spoc_pd.kernel_def.polynom_degree = polynom_degree;
+  spoc_pd.kernel_def.polynom_a0 = polynom_a0;
+  spoc_pd.kernel_def.exponent_sigma = exponent_sigma;
   
   spoc_pd.epsilon =  1e-3;
   spoc_pd.epsilon0 = (1-1e-6);
